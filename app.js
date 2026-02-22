@@ -1,4 +1,4 @@
-const recipeDb = [
+const baseRecipes = [
   {
     name: 'Menemen',
     cuisine: 'turkish',
@@ -66,6 +66,92 @@ const recipeDb = [
   }
 ];
 
+const templatePools = [
+  {
+    title: 'Sebzeli {main} Sote',
+    cuisine: 'healthy',
+    mains: ['tavuk', 'hindi', 'mantar', 'kabak', 'patlıcan', 'karnabahar'],
+    extras: ['biber', 'soğan', 'sarımsak', 'zeytinyağı', 'karabiber'],
+    time: [18, 20, 22, 25]
+  },
+  {
+    title: '{main}li Makarna',
+    cuisine: 'fast',
+    mains: ['domates', 'ton balığı', 'mantar', 'brokoli', 'ıspanak', 'peynir'],
+    extras: ['makarna', 'zeytinyağı', 'tuz', 'karabiber', 'sarımsak'],
+    time: [15, 18, 20, 22]
+  },
+  {
+    title: 'Fırında {main} Tepsisi',
+    cuisine: 'turkish',
+    mains: ['patates', 'kabak', 'patlıcan', 'tavuk', 'köfte', 'karnabahar'],
+    extras: ['soğan', 'domates', 'zeytinyağı', 'pul biber', 'tuz'],
+    time: [35, 40, 45, 50]
+  },
+  {
+    title: '{main} Çorbası',
+    cuisine: 'turkish',
+    mains: ['mercimek', 'brokoli', 'mantar', 'domates', 'kabak', 'ezogelin'],
+    extras: ['soğan', 'su', 'tereyağı', 'tuz', 'nane'],
+    time: [25, 30, 35, 40]
+  },
+  {
+    title: '{main} Salatası',
+    cuisine: 'healthy',
+    mains: ['nohut', 'kinoa', 'yeşil mercimek', 'ton balığı', 'tavuk', 'makarna'],
+    extras: ['zeytinyağı', 'limon', 'salatalık', 'maydanoz', 'tuz'],
+    time: [12, 15, 18, 20]
+  },
+  {
+    title: '{main} Tava',
+    cuisine: 'fast',
+    mains: ['yumurta', 'sucuk', 'patates', 'mantar', 'biber', 'soğan'],
+    extras: ['zeytinyağı', 'tuz', 'karabiber', 'pul biber', 'kaşar peyniri'],
+    time: [10, 12, 15, 18]
+  }
+];
+
+function generateRecipeDb(minCount = 520) {
+  const generated = [];
+  let index = 1;
+
+  while (generated.length + baseRecipes.length < minCount) {
+    templatePools.forEach((pool) => {
+      pool.mains.forEach((main, mainIndex) => {
+        if (generated.length + baseRecipes.length >= minCount) {
+          return;
+        }
+
+        const duration = pool.time[(index + mainIndex) % pool.time.length];
+        const recipe = {
+          name: `${pool.title.replace('{main}', capitalize(main))} #${index}`,
+          cuisine: pool.cuisine,
+          time: duration,
+          ingredients: [main, ...pool.extras],
+          steps: [
+            `${capitalize(main)} ve yardımcı malzemeleri hazırlayıp doğra.`,
+            'Ana malzemeleri orta ateşte aromalarla birlikte pişir.',
+            'Tuz, baharat ve kıvam ayarı yaparak lezzeti dengele.',
+            'Sıcak ya da uygun şekilde dinlendirip servis et.'
+          ],
+          description: `Evdeki malzemelerle hızlı hazırlanabilen ${main} odaklı pratik tarif.`
+        };
+
+        generated.push(recipe);
+        index += 1;
+      });
+    });
+  }
+
+  return [...baseRecipes, ...generated];
+}
+
+function capitalize(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+const recipeDb = generateRecipeDb(520);
+
 const ingredientsInput = document.getElementById('ingredients');
 const cuisineInput = document.getElementById('cuisine');
 const maxTimeInput = document.getElementById('maxTime');
@@ -108,7 +194,7 @@ function renderRecipes(recipes, userIngredients, maxTime) {
       return { ...recipe, score, missing };
     })
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, 6);
 
   ranked.forEach((recipe) => {
     const node = recipeTemplate.content.cloneNode(true);
