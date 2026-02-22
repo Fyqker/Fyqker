@@ -1,0 +1,83 @@
+:root {
+  --bg: #10131e;
+  --ui: #1e2539;
+  --text: #f2f5ff;
+  --accent: #45f0ff;
+}
+
+* {
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  font-family: 'Trebuchet MS', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #17243a, #0a0e17);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+
+.hud-top {
+  width: 1100px;
+  background: rgba(21, 27, 44, 0.88);
+  border: 2px solid #3f4b70;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+canvas {
+  border: 3px solid #526490;
+  border-radius: 10px;
+  background: #5f8b44;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+  cursor: crosshair;
+}
+
+.controls {
+  width: 1100px;
+  background: rgba(21, 27, 44, 0.88);
+  border: 2px solid #3f4b70;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: grid;
+  place-items: center;
+}
+
+.hidden {
+  display: none;
+}
+
+.panel {
+  background: #1c2235;
+  border: 2px solid #6678a8;
+  border-radius: 10px;
+  padding: 28px;
+  text-align: center;
+}
+
+button {
+  background: var(--accent);
+  color: #00111c;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}

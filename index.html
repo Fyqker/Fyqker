@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixel Battle Royale</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="hud-top">
+      <div><strong>Can:</strong> <span id="health">100</span></div>
+      <div><strong>Zırh:</strong> <span id="armor">0</span></div>
+      <div><strong>Silah:</strong> <span id="weapon">Rifle</span></div>
+      <div><strong>Mermi:</strong> <span id="ammo">30 / 30</span></div>
+      <div><strong>Kalan:</strong> <span id="alive">0</span></div>
+      <div><strong>Skor:</strong> <span id="kills">0</span></div>
+      <div><strong>Zone:</strong> <span id="zone">1</span></div>
+    </div>
+
+    <canvas id="game" width="1100" height="700"></canvas>
+
+    <div class="controls">
+      <p>WASD: hareket • Fare: nişan • Sol tık: ateş • R: şarjör doldur • 1/2: silah değiştir • F: loot kutusu aç</p>
+    </div>
+
+    <div id="overlay" class="overlay hidden">
+      <div class="panel">
+        <h1 id="overlay-title"></h1>
+        <p id="overlay-text"></p>
+        <button id="restart">Tekrar Başlat</button>
+      </div>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>

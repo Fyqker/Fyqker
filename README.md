@@ -1,16 +1,22 @@
-## Hi there 👋
+## Pixel Battle Royale
 
-<!--
-**Fyqker/Fyqker** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Tarayıcıda çalışan, PUBG ilhamlı piksel temalı mini battle royale oyunu.
 
-Here are some ideas to get you started:
+### Özellikler
+- WASD ile hareket, fare ile nişan alma ve ateş etme
+- 2 silah tipi: Rifle ve SMG
+- Şarjör / yedek mermi sistemi ve `R` ile reload
+- Daralan güvenli alan (zone)
+- Bot rakipler, skor ve hayatta kalan sayısı
+- `F` ile loot kutusu açma (can, zırh, mermi)
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+### Çalıştırma
+Bu klasörde bir statik sunucu açıp `index.html` dosyasını çalıştır:
+
+```bash
+python3 -m http.server 8080
+```
+
+Sonra tarayıcıda aç:
+
+`http://localhost:8080`
