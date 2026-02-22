@@ -1,27 +1,33 @@
-## Pixel Battle Royale 3D
+## Pixel Battle Royale 3D (Optimize Edition)
 
-Tarayıcıda çalışan, PUBG esintili, **3D ve piksel-stil** battle royale demo.
+Tarayıcıda çalışan 3D battle royale demo. Bu sürümde odak: **performans + oynanabilirlik + başlangıç GUI ayarları**.
 
-### Yeni sürümde neler var?
-- 3D dünya (Three.js) ve üçüncü şahıs kamera
-- Çok büyük harita (`5000 x 5000`)
-- Çok hızlı ve agresif botlar (54 bot)
-- 3 silah: Rifle / SMG / Sniper
-- Reload, sprint, jump, dash, medkit sistemi
-- Loot kutuları (normal + elite), coin kazanımı
-- Daralan zone + faz sistemi
-- Killfeed, skor, canlı HUD metrikleri
+### Yeni eklenenler
+- Oyun başlamadan önce gelişmiş GUI:
+  - Bot sayısı
+  - Harita boyutu
+  - Kolay / Orta / Zor
+  - Grafik kalite (düşük/orta/yüksek)
+- Botlar optimize edilip azaltılabilir hale getirildi (ayar ekranından)
+- Oyuncu ve botlara daha belirgin low-poly/pixel karakter modeli eklendi
+- Hız oranı dengesi: oyuncu ve bot hızları zorluk seviyesine göre orantılı
+- Ateş etme sistemi iyileştirildi (raycast hit detection)
+- 2 sürülebilir araç eklendi:
+  - Buggy (hızlı)
+  - Truck (daha dengeli)
+- Araça bin / in: `F`
+- Zone optimizasyonu: her frame mesh yaratmak yerine tek zone mesh ölçekleniyor
 
 ### Kontroller
-- `WASD`: hareket
+- `WASD`: hareket / araç sürme
 - `Shift`: sprint
 - `Space`: zıpla
-- `Mouse`: kamera + nişan
+- `Mouse`: kamera
 - `Sol tık`: ateş
 - `R`: reload
 - `1/2/3`: silah değiştir
-- `F`: loot aç
-- `E`: medkit kullan
+- `F`: loot aç / araca bin-in
+- `E`: medkit
 - `Q`: dash
 
 ### Çalıştırma
@@ -29,6 +35,5 @@ Tarayıcıda çalışan, PUBG esintili, **3D ve piksel-stil** battle royale demo
 python3 -m http.server 8080
 ```
 
-Tarayıcı:
-
+Aç:
 `http://localhost:8080`

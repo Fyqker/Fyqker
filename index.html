@@ -9,7 +9,42 @@
   <body>
     <div id="game-root"></div>
 
-    <div class="hud-top">
+    <div id="prestart" class="menu-overlay">
+      <div class="menu-panel">
+        <h1>PIXEL BATTLE 3D</h1>
+        <p>Oyunu başlatmadan ayarları özelleştir.</p>
+        <div class="menu-grid">
+          <label>Bot Sayısı
+            <input id="set-bots" type="range" min="8" max="60" step="2" value="24" />
+            <span id="set-bots-value">24</span>
+          </label>
+          <label>Harita Büyüklüğü
+            <select id="set-map">
+              <option value="3000">Küçük</option>
+              <option value="4200" selected>Orta</option>
+              <option value="5600">Büyük</option>
+            </select>
+          </label>
+          <label>Zorluk
+            <select id="set-difficulty">
+              <option value="easy">Kolay</option>
+              <option value="normal" selected>Orta</option>
+              <option value="hard">Zor</option>
+            </select>
+          </label>
+          <label>Grafik
+            <select id="set-quality">
+              <option value="low">Düşük (FPS)</option>
+              <option value="medium" selected>Orta</option>
+              <option value="high">Yüksek</option>
+            </select>
+          </label>
+        </div>
+        <button id="start-btn">Oyunu Başlat</button>
+      </div>
+    </div>
+
+    <div class="hud-top hidden" id="hud">
       <div><strong>Can</strong><span id="health">100</span></div>
       <div><strong>Zırh</strong><span id="armor">35</span></div>
       <div><strong>Silah</strong><span id="weapon">Rifle</span></div>
@@ -19,15 +54,16 @@
       <div><strong>Zone</strong><span id="zone">1</span></div>
       <div><strong>Koşu</strong><span id="stamina">100</span></div>
       <div><strong>Para</strong><span id="coins">0</span></div>
+      <div><strong>Araç</strong><span id="vehicle">Yaya</span></div>
     </div>
 
-    <div class="crosshair">+</div>
+    <div class="crosshair hidden" id="crosshair">+</div>
 
-    <div class="controls">
-      <p>WASD: hareket • Shift: sprint • Space: zıpla • Fare: bakış • Sol tık: ateş • R: reload • 1/2/3: silah • F: loot • E: medkit • Q: dash</p>
+    <div class="controls hidden" id="controls">
+      <p>WASD: hareket • Shift: sprint • Space: zıpla • Fare: bakış • Sol tık: ateş • R: reload • 1/2/3: silah • F: loot/araç • E: medkit • Q: dash</p>
     </div>
 
-    <div id="killfeed" class="killfeed"></div>
+    <div id="killfeed" class="killfeed hidden"></div>
 
     <div id="overlay" class="overlay hidden">
       <div class="panel">
