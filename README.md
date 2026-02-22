@@ -1,16 +1,25 @@
-## Hi there 👋
+# LezzetAI 🍳
 
-<!--
-**Fyqker/Fyqker** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Evde bulunan malzemelere göre yapay zeka destekli (puanlama mantığıyla) tarif öneren modern bir web sitesi.
 
-Here are some ideas to get you started:
+## Özellikler
+- Malzeme listesine göre tarif uyum puanı hesaplama
+- Mutfak tipi filtreleme (Türk mutfağı, pratik, sağlıklı)
+- Maksimum süreye göre öneri sıralama
+- Şık ve mobil uyumlu arayüz
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## Çalıştırma
+Bu proje saf HTML/CSS/JS ile yazıldı.
+
+```bash
+python3 -m http.server 4173
+```
+
+Ardından tarayıcıdan:
+
+`http://localhost:4173`
+
+## Dosya yapısı
+- `index.html`: Sayfa iskeleti
+- `styles.css`: Tasarım
+- `app.js`: Tarif veri seti, puanlama ve render mantığı
