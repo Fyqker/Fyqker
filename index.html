@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LezzetAI - Evdeki Malzemelere Göre Tarif</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="hero card">
+        <p class="pill">🤖 Yapay Zeka Destekli Mutfak Asistanı</p>
+        <h1>Evde Olan Malzemelerle<br />Hızlı Yemek Tarifi Bul</h1>
+        <p>
+          Buzdolabında ne varsa yaz, LezzetAI sana uygun tarifleri puanlayıp adım adım sunsun.
+        </p>
+      </section>
+
+      <section class="card form-card">
+        <div class="input-grid">
+          <label>
+            Malzemeler (virgülle ayır)
+            <textarea
+              id="ingredients"
+              placeholder="Örn: yumurta, domates, soğan, kaşar peyniri"
+            ></textarea>
+          </label>
+
+          <label>
+            Mutfak tipi
+            <select id="cuisine">
+              <option value="all">Hepsi</option>
+              <option value="turkish">Türk Mutfağı</option>
+              <option value="fast">Pratik/Hızlı</option>
+              <option value="healthy">Sağlıklı</option>
+            </select>
+          </label>
+
+          <label>
+            Maksimum süre (dakika)
+            <input id="maxTime" type="number" min="10" max="120" value="40" />
+          </label>
+        </div>
+
+        <button id="generateBtn">Tarifleri Getir</button>
+      </section>
+
+      <section class="results" id="results"></section>
+    </main>
+
+    <template id="recipeTemplate">
+      <article class="card recipe-card">
+        <div class="recipe-header">
+          <h3 class="recipe-title"></h3>
+          <span class="score"></span>
+        </div>
+        <p class="meta"></p>
+        <p class="description"></p>
+        <ul class="steps"></ul>
+        <p class="missing"></p>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>

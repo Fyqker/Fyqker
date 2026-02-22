@@ -1,0 +1,164 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f7ff;
+  --card: #ffffff;
+  --accent: #5b4bff;
+  --accent-2: #19a7ce;
+  --text: #1f2a37;
+  --muted: #607086;
+  --success: #00a878;
+  --warn: #ef476f;
+  --shadow: 0 16px 40px rgba(54, 74, 165, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top left, #dee9ff, var(--bg) 45%);
+  min-height: 100vh;
+}
+
+.container {
+  width: min(1100px, 92vw);
+  margin: 2rem auto 3rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+}
+
+.hero {
+  background: linear-gradient(120deg, #ffffff 0%, #eef4ff 60%, #e3f8ff 100%);
+}
+
+.hero h1 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+}
+
+.hero p {
+  color: var(--muted);
+}
+
+.pill {
+  display: inline-block;
+  background: rgba(91, 75, 255, 0.12);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.form-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.input-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+textarea,
+input,
+select {
+  width: 100%;
+  border: 1px solid #d8e0f5;
+  border-radius: 12px;
+  padding: 0.75rem;
+  font: inherit;
+  color: var(--text);
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+button {
+  justify-self: start;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.8rem 1.2rem;
+  font: inherit;
+  font-weight: 700;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+.results {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.recipe-card {
+  border-top: 5px solid var(--accent);
+}
+
+.recipe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.recipe-title {
+  margin: 0;
+}
+
+.score {
+  background: rgba(0, 168, 120, 0.14);
+  color: var(--success);
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  white-space: nowrap;
+}
+
+.meta,
+.description,
+.missing {
+  color: var(--muted);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.missing {
+  font-size: 0.92rem;
+  margin-bottom: 0;
+}
+
+.missing strong {
+  color: var(--warn);
+}
