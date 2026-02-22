@@ -3,25 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pixel Battle Royale</title>
+    <title>Pixel Battle Royale 3D</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <div id="game-root"></div>
+
     <div class="hud-top">
-      <div><strong>Can:</strong> <span id="health">100</span></div>
-      <div><strong>Zırh:</strong> <span id="armor">0</span></div>
-      <div><strong>Silah:</strong> <span id="weapon">Rifle</span></div>
-      <div><strong>Mermi:</strong> <span id="ammo">30 / 30</span></div>
-      <div><strong>Kalan:</strong> <span id="alive">0</span></div>
-      <div><strong>Skor:</strong> <span id="kills">0</span></div>
-      <div><strong>Zone:</strong> <span id="zone">1</span></div>
+      <div><strong>Can</strong><span id="health">100</span></div>
+      <div><strong>Zırh</strong><span id="armor">35</span></div>
+      <div><strong>Silah</strong><span id="weapon">Rifle</span></div>
+      <div><strong>Mermi</strong><span id="ammo">35 / 120</span></div>
+      <div><strong>Kalan</strong><span id="alive">0</span></div>
+      <div><strong>Skor</strong><span id="kills">0</span></div>
+      <div><strong>Zone</strong><span id="zone">1</span></div>
+      <div><strong>Koşu</strong><span id="stamina">100</span></div>
+      <div><strong>Para</strong><span id="coins">0</span></div>
     </div>
 
-    <canvas id="game" width="1100" height="700"></canvas>
+    <div class="crosshair">+</div>
 
     <div class="controls">
-      <p>WASD: hareket • Fare: nişan • Sol tık: ateş • R: şarjör doldur • 1/2: silah değiştir • F: loot kutusu aç</p>
+      <p>WASD: hareket • Shift: sprint • Space: zıpla • Fare: bakış • Sol tık: ateş • R: reload • 1/2/3: silah • F: loot • E: medkit • Q: dash</p>
     </div>
+
+    <div id="killfeed" class="killfeed"></div>
 
     <div id="overlay" class="overlay hidden">
       <div class="panel">
@@ -31,6 +37,6 @@
       </div>
     </div>
 
-    <script src="game.js"></script>
+    <script type="module" src="game.js"></script>
   </body>
 </html>

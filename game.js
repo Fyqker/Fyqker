@@ -1,6 +1,6 @@
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
 
+const root = document.getElementById('game-root');
 const hud = {
   health: document.getElementById('health'),
   armor: document.getElementById('armor'),
@@ -8,405 +8,550 @@ const hud = {
   ammo: document.getElementById('ammo'),
   alive: document.getElementById('alive'),
   kills: document.getElementById('kills'),
-  zone: document.getElementById('zone')
+  zone: document.getElementById('zone'),
+  stamina: document.getElementById('stamina'),
+  coins: document.getElementById('coins')
 };
-
+const killfeed = document.getElementById('killfeed');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayText = document.getElementById('overlay-text');
 const restartBtn = document.getElementById('restart');
 
-const world = {
-  width: 2200,
-  height: 1400,
-  cameraX: 0,
-  cameraY: 0,
-  safeZone: { x: 1100, y: 700, radius: 900 },
-  phase: 1,
-  nextShrinkAt: performance.now() + 18000
-};
-
-const keys = {};
-const mouse = { x: 0, y: 0, down: false };
-
 const weapons = {
-  rifle: { name: 'Rifle', magSize: 30, fireDelay: 105, bulletSpeed: 12, damage: 18, color: '#ffd56a' },
-  smg: { name: 'SMG', magSize: 40, fireDelay: 70, bulletSpeed: 14, damage: 11, color: '#9ee7ff' }
+  rifle: { name: 'Rifle', fireDelay: 0.1, speed: 280, dmg: 24, mag: 35, reserve: 120, spread: 0.009 },
+  smg: { name: 'SMG', fireDelay: 0.06, speed: 250, dmg: 15, mag: 50, reserve: 180, spread: 0.018 },
+  sniper: { name: 'Sniper', fireDelay: 0.7, speed: 420, dmg: 70, mag: 7, reserve: 35, spread: 0.002 }
 };
 
-let player;
-let bots;
-let bullets;
-let loots;
-let particles;
+const world = {
+  size: 5000,
+  zoneCenter: new THREE.Vector3(0, 0, 0),
+  zoneRadius: 2200,
+  phase: 1,
+  nextShrink: 28,
+  time: 0
+};
+
+let scene;
+let camera;
+let renderer;
+let clock;
 let gameOver = false;
 
+let player;
+let bullets = [];
+let bots = [];
+let lootBoxes = [];
+let obstacles = [];
+let keys = {};
+let mouseDown = false;
+let yaw = 0;
+let pitch = -0.18;
+let feedItems = [];
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x88c5ff);
+  scene.fog = new THREE.Fog(0x88b7ef, 800, 3800);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 8000);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  root.innerHTML = '';
+  root.appendChild(renderer.domElement);
+
+  clock = new THREE.Clock();
+
+  const hemi = new THREE.HemisphereLight(0xddefff, 0x3d4f2f, 1.05);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+  sun.position.set(140, 220, 90);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  makeTerrain();
+  spawnObstacles();
+  resetGame();
+
+  window.addEventListener('resize', onResize);
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', (e) => (keys[e.key.toLowerCase()] = false));
+  window.addEventListener('mousedown', () => {
+    mouseDown = true;
+    renderer.domElement.requestPointerLock();
+  });
+  window.addEventListener('mouseup', () => (mouseDown = false));
+  window.addEventListener('mousemove', onMouseMove);
+
+  restartBtn.addEventListener('click', resetGame);
+
+  animate();
+}
+
+function makeTerrain() {
+  const g = new THREE.PlaneGeometry(world.size, world.size, 130, 130);
+  g.rotateX(-Math.PI / 2);
+  const arr = g.attributes.position;
+  for (let i = 0; i < arr.count; i++) {
+    const x = arr.getX(i);
+    const z = arr.getZ(i);
+    arr.setY(i, Math.sin(x * 0.005) * 8 + Math.cos(z * 0.007) * 8);
+  }
+  g.computeVertexNormals();
+
+  const m = new THREE.MeshStandardMaterial({ color: 0x4f8f3f, flatShading: true });
+  const ground = new THREE.Mesh(g, m);
+  ground.receiveShadow = true;
+  scene.add(ground);
+}
+
+function spawnObstacles() {
+  for (const obj of obstacles) scene.remove(obj.mesh);
+  obstacles = [];
+  const mats = [
+    new THREE.MeshStandardMaterial({ color: 0x715237, flatShading: true }),
+    new THREE.MeshStandardMaterial({ color: 0x56616f, flatShading: true })
+  ];
+
+  for (let i = 0; i < 320; i++) {
+    const isTree = Math.random() < 0.6;
+    const mesh = new THREE.Mesh(
+      isTree ? new THREE.CylinderGeometry(2.2, 3.3, 24, 6) : new THREE.BoxGeometry(14, 8, 14),
+      mats[isTree ? 0 : 1]
+    );
+    mesh.position.set((Math.random() - 0.5) * world.size * 0.92, isTree ? 12 : 4, (Math.random() - 0.5) * world.size * 0.92);
+    mesh.castShadow = true;
+    scene.add(mesh);
+    obstacles.push({ mesh, r: isTree ? 6 : 10 });
+  }
+}
+
+function makeBot(id) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(8, 10, 6), new THREE.MeshStandardMaterial({ color: 0xea564f, flatShading: true }));
+  const head = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 5), new THREE.MeshStandardMaterial({ color: 0x212733, flatShading: true }));
+  body.position.y = 10;
+  head.position.y = 17;
+  group.add(body, head);
+  group.castShadow = true;
+  scene.add(group);
+
+  return {
+    id,
+    mesh: group,
+    pos: new THREE.Vector3((Math.random() - 0.5) * world.size * 0.7, 5, (Math.random() - 0.5) * world.size * 0.7),
+    vel: new THREE.Vector3(),
+    hp: 100,
+    armor: Math.random() < 0.45 ? 50 : 15,
+    speed: 26 + Math.random() * 8,
+    nextWander: 0,
+    dir: new THREE.Vector3(1, 0, 0),
+    weapon: Math.random() < 0.7 ? 'smg' : 'rifle',
+    shootCd: 0,
+    alive: true,
+    level: 1 + Math.floor(Math.random() * 3)
+  };
+}
+
+function spawnLoot(x, z, elite = false) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(6, 6, 6), new THREE.MeshStandardMaterial({ color: elite ? 0xffd94d : 0x9c7a54, emissive: elite ? 0x403000 : 0x000000 }));
+  mesh.position.set(x, 3, z);
+  scene.add(mesh);
+  lootBoxes.push({ mesh, opened: false, elite });
+}
+
 function resetGame() {
+  for (const b of bots) scene.remove(b.mesh);
+  for (const l of lootBoxes) scene.remove(l.mesh);
+  for (const b of bullets) scene.remove(b.mesh);
+  bots = [];
+  lootBoxes = [];
+  bullets = [];
+  feedItems = [];
+  killfeed.innerHTML = '';
+
   player = {
-    x: world.width / 2,
-    y: world.height / 2,
-    w: 22,
-    h: 22,
-    speed: 3.5,
-    health: 100,
-    armor: 0,
+    pos: new THREE.Vector3(0, 5, 0),
+    velY: 0,
+    hp: 100,
+    armor: 35,
     kills: 0,
-    weaponKey: 'rifle',
-    ammo: { rifle: 30, smg: 40 },
-    reserve: { rifle: 90, smg: 120 },
-    lastShot: 0,
-    reloadUntil: 0
+    coins: 0,
+    stamina: 100,
+    medkits: 2,
+    weapon: 'rifle',
+    ammo: { rifle: weapons.rifle.mag, smg: weapons.smg.mag, sniper: weapons.sniper.mag },
+    reserve: { rifle: weapons.rifle.reserve, smg: weapons.smg.reserve, sniper: weapons.sniper.reserve },
+    cd: 0,
+    reloadTimer: 0,
+    dashCd: 0
   };
 
-  bots = Array.from({ length: 20 }, (_, i) => spawnBot(i));
-  bullets = [];
-  particles = [];
-  loots = Array.from({ length: 16 }, spawnLoot);
+  for (let i = 0; i < 54; i++) bots.push(makeBot(i));
+  for (let i = 0; i < 180; i++) spawnLoot((Math.random() - 0.5) * world.size * 0.85, (Math.random() - 0.5) * world.size * 0.85, Math.random() < 0.12);
 
-  world.safeZone = { x: 1100, y: 700, radius: 900 };
+  world.zoneCenter.set(0, 0, 0);
+  world.zoneRadius = 2200;
   world.phase = 1;
-  world.nextShrinkAt = performance.now() + 18000;
+  world.nextShrink = 28;
+  world.time = 0;
+
+  yaw = 0;
+  pitch = -0.18;
   gameOver = false;
   overlay.classList.add('hidden');
 }
 
-function spawnBot(i) {
-  return {
-    id: i,
-    x: Math.random() * world.width,
-    y: Math.random() * world.height,
-    w: 20,
-    h: 20,
-    health: 100,
-    armor: Math.random() < 0.35 ? 25 : 0,
-    speed: 2 + Math.random() * 1.2,
-    dirX: 0,
-    dirY: 0,
-    nextDirAt: 0,
-    lastShot: 0,
-    weapon: Math.random() < 0.5 ? 'rifle' : 'smg',
-    alive: true
-  };
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function spawnLoot() {
-  return {
-    x: 120 + Math.random() * (world.width - 240),
-    y: 120 + Math.random() * (world.height - 240),
-    size: 28,
-    opened: false
-  };
+function onMouseMove(e) {
+  if (document.pointerLockElement !== renderer.domElement) return;
+  yaw -= e.movementX * 0.0022;
+  pitch -= e.movementY * 0.0022;
+  pitch = Math.max(-1.2, Math.min(0.6, pitch));
 }
 
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
+function onKeyDown(e) {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 'r') reload();
+  if (k === '1') player.weapon = 'rifle';
+  if (k === '2') player.weapon = 'smg';
+  if (k === '3') player.weapon = 'sniper';
+  if (k === 'f') openLoot();
+  if (k === 'e') useMedkit();
+  if (k === 'q') dash();
 }
 
-function dist(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
+function useMedkit() {
+  if (player.medkits <= 0 || player.hp >= 95) return;
+  player.medkits--;
+  player.hp = Math.min(100, player.hp + 45);
+  addFeed('Medkit kullandın +45 HP');
 }
 
-window.addEventListener('keydown', (e) => {
-  keys[e.key.toLowerCase()] = true;
-  if (e.key.toLowerCase() === 'r') reload();
-  if (e.key === '1') player.weaponKey = 'rifle';
-  if (e.key === '2') player.weaponKey = 'smg';
-  if (e.key.toLowerCase() === 'f') tryOpenLoot();
-});
-window.addEventListener('keyup', (e) => (keys[e.key.toLowerCase()] = false));
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = e.clientX - rect.left;
-  mouse.y = e.clientY - rect.top;
-});
-canvas.addEventListener('mousedown', () => (mouse.down = true));
-canvas.addEventListener('mouseup', () => (mouse.down = false));
-restartBtn.addEventListener('click', resetGame);
+function dash() {
+  if (player.dashCd > 0 || player.stamina < 20) return;
+  const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+  player.pos.addScaledVector(forward, 45);
+  player.stamina -= 20;
+  player.dashCd = 4;
+}
 
 function reload() {
-  if (gameOver) return;
-  if (performance.now() < player.reloadUntil) return;
-  const key = player.weaponKey;
+  if (player.reloadTimer > 0) return;
+  const key = player.weapon;
   const gun = weapons[key];
-  const missing = gun.magSize - player.ammo[key];
-  if (missing <= 0 || player.reserve[key] <= 0) return;
-  player.reloadUntil = performance.now() + 1200;
-  setTimeout(() => {
-    const add = Math.min(missing, player.reserve[key]);
-    player.ammo[key] += add;
-    player.reserve[key] -= add;
-  }, 1200);
+  const miss = gun.mag - player.ammo[key];
+  if (miss <= 0 || player.reserve[key] <= 0) return;
+  player.reloadTimer = key === 'sniper' ? 1.5 : 1.1;
 }
 
-function tryOpenLoot() {
-  for (const box of loots) {
-    if (!box.opened && Math.hypot(box.x - player.x, box.y - player.y) < 46) {
-      box.opened = true;
-      const roll = Math.random();
-      if (roll < 0.4) player.health = Math.min(100, player.health + 30);
-      else if (roll < 0.7) player.armor = Math.min(100, player.armor + 35);
-      else {
-        player.reserve.rifle += 40;
-        player.reserve.smg += 50;
+function fire(dt) {
+  player.cd -= dt;
+  if (player.reloadTimer > 0) {
+    player.reloadTimer -= dt;
+    if (player.reloadTimer <= 0) {
+      const key = player.weapon;
+      const gun = weapons[key];
+      const need = gun.mag - player.ammo[key];
+      const add = Math.min(need, player.reserve[key]);
+      player.ammo[key] += add;
+      player.reserve[key] -= add;
+    }
+    return;
+  }
+  if (!mouseDown || player.cd > 0) return;
+  const gun = weapons[player.weapon];
+  if (player.ammo[player.weapon] <= 0) return;
+
+  player.cd = gun.fireDelay;
+  player.ammo[player.weapon]--;
+
+  const dir = new THREE.Vector3(Math.sin(yaw), Math.sin(pitch), Math.cos(yaw)).normalize();
+  dir.x += (Math.random() - 0.5) * gun.spread;
+  dir.y += (Math.random() - 0.5) * gun.spread;
+  dir.z += (Math.random() - 0.5) * gun.spread;
+  dir.normalize();
+
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 6), new THREE.MeshBasicMaterial({ color: 0xfff2a0 }));
+  mesh.position.copy(player.pos).add(new THREE.Vector3(0, 8, 0));
+  scene.add(mesh);
+
+  bullets.push({ mesh, pos: mesh.position.clone(), vel: dir.multiplyScalar(gun.speed), dmg: gun.dmg, life: 3.5, fromPlayer: true });
+}
+
+function botShoot(bot, dt) {
+  bot.shootCd -= dt;
+  if (bot.shootCd > 0) return;
+  const d = bot.pos.distanceTo(player.pos);
+  if (d > 340) return;
+
+  bot.shootCd = weapons[bot.weapon].fireDelay + Math.random() * 0.15;
+
+  const dir = player.pos.clone().sub(bot.pos).add(new THREE.Vector3((Math.random() - 0.5) * 7, 6, (Math.random() - 0.5) * 7)).normalize();
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.7, 5, 5), new THREE.MeshBasicMaterial({ color: 0xff7f6d }));
+  mesh.position.copy(bot.pos).add(new THREE.Vector3(0, 9, 0));
+  scene.add(mesh);
+  bullets.push({ mesh, pos: mesh.position.clone(), vel: dir.multiplyScalar(weapons[bot.weapon].speed * 0.9), dmg: weapons[bot.weapon].dmg, life: 3.2, fromPlayer: false, shooter: bot.id });
+}
+
+function obstaclePush(pos, radius = 6) {
+  for (const o of obstacles) {
+    const d = new THREE.Vector2(pos.x - o.mesh.position.x, pos.z - o.mesh.position.z);
+    const minD = radius + o.r;
+    const len = d.length();
+    if (len > 0 && len < minD) {
+      d.normalize().multiplyScalar(minD - len + 0.5);
+      pos.x += d.x;
+      pos.z += d.y;
+    }
+  }
+}
+
+function updatePlayer(dt) {
+  const speed = keys.shift && player.stamina > 1 ? 30 : 17;
+  if (keys.shift && (keys.w || keys.a || keys.s || keys.d)) player.stamina = Math.max(0, player.stamina - 24 * dt);
+  else player.stamina = Math.min(100, player.stamina + 16 * dt);
+
+  const forward = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+  const right = new THREE.Vector3(forward.z, 0, -forward.x);
+  const move = new THREE.Vector3();
+
+  if (keys.w) move.add(forward);
+  if (keys.s) move.sub(forward);
+  if (keys.a) move.sub(right);
+  if (keys.d) move.add(right);
+  if (move.lengthSq() > 0) move.normalize().multiplyScalar(speed * dt);
+
+  if (keys[' '] && player.pos.y <= 5.01) player.velY = 18;
+  player.velY -= 40 * dt;
+  player.pos.y += player.velY * dt;
+  if (player.pos.y < 5) {
+    player.pos.y = 5;
+    player.velY = 0;
+  }
+
+  player.pos.add(move);
+  player.pos.x = Math.max(-world.size * 0.49, Math.min(world.size * 0.49, player.pos.x));
+  player.pos.z = Math.max(-world.size * 0.49, Math.min(world.size * 0.49, player.pos.z));
+  obstaclePush(player.pos, 5.2);
+
+  player.dashCd = Math.max(0, player.dashCd - dt);
+
+  const zoneDist = player.pos.distanceTo(world.zoneCenter);
+  if (zoneDist > world.zoneRadius) player.hp -= 7 * dt;
+
+  const camOffset = new THREE.Vector3(Math.sin(yaw + Math.PI) * 22, 14 + Math.sin(-pitch) * 7, Math.cos(yaw + Math.PI) * 22);
+  camera.position.copy(player.pos).add(camOffset);
+  camera.lookAt(player.pos.clone().add(new THREE.Vector3(Math.sin(yaw) * 20, 8 + Math.sin(pitch) * 10, Math.cos(yaw) * 20)));
+}
+
+function updateBots(dt) {
+  for (const bot of bots) {
+    if (!bot.alive) continue;
+
+    const toP = player.pos.clone().sub(bot.pos);
+    const dist = toP.length();
+
+    if (dist < 440) {
+      toP.y = 0;
+      toP.normalize();
+      bot.dir.copy(toP);
+    } else if (world.time > bot.nextWander) {
+      bot.nextWander = world.time + 1.5 + Math.random() * 2.6;
+      bot.dir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+    }
+
+    bot.pos.addScaledVector(bot.dir, bot.speed * dt);
+    bot.pos.x = Math.max(-world.size * 0.49, Math.min(world.size * 0.49, bot.pos.x));
+    bot.pos.z = Math.max(-world.size * 0.49, Math.min(world.size * 0.49, bot.pos.z));
+    obstaclePush(bot.pos, 5.5);
+
+    const zoneDist = bot.pos.distanceTo(world.zoneCenter);
+    if (zoneDist > world.zoneRadius) bot.hp -= 5.5 * dt;
+
+    botShoot(bot, dt);
+
+    bot.mesh.position.copy(bot.pos);
+    bot.mesh.lookAt(bot.pos.clone().add(bot.dir));
+
+    if (bot.hp <= 0) {
+      bot.alive = false;
+      scene.remove(bot.mesh);
+      player.coins += 4 + bot.level;
+      spawnLoot(bot.pos.x, bot.pos.z, Math.random() < 0.25);
+      addFeed(`Bot #${bot.id} elendi (+${4 + bot.level} coin)`);
+      player.kills++;
+    }
+  }
+}
+
+function updateBullets(dt) {
+  for (const b of bullets) {
+    b.life -= dt;
+    b.pos.addScaledVector(b.vel, dt);
+    b.mesh.position.copy(b.pos);
+
+    if (b.fromPlayer) {
+      for (const bot of bots) {
+        if (!bot.alive) continue;
+        if (b.pos.distanceTo(bot.pos.clone().add(new THREE.Vector3(0, 8, 0))) < 5.8) {
+          let dmg = b.dmg;
+          if (bot.armor > 0) {
+            const absorb = Math.min(bot.armor, dmg * 0.45);
+            bot.armor -= absorb;
+            dmg -= absorb;
+          }
+          bot.hp -= dmg;
+          b.life = 0;
+          break;
+        }
       }
-      burst(box.x, box.y, '#9cff8a');
+    } else if (b.pos.distanceTo(player.pos.clone().add(new THREE.Vector3(0, 8, 0))) < 4.8) {
+      let dmg = b.dmg;
+      if (player.armor > 0) {
+        const absorb = Math.min(player.armor, dmg * 0.5);
+        player.armor -= absorb;
+        dmg -= absorb;
+      }
+      player.hp -= dmg;
+      b.life = 0;
+    }
+  }
+
+  bullets = bullets.filter((b) => {
+    const alive = b.life > 0 && Math.abs(b.pos.x) < world.size * 0.6 && Math.abs(b.pos.z) < world.size * 0.6;
+    if (!alive) scene.remove(b.mesh);
+    return alive;
+  });
+}
+
+function openLoot() {
+  for (const l of lootBoxes) {
+    if (l.opened) continue;
+    const d = l.mesh.position.distanceTo(player.pos);
+    if (d < 16) {
+      l.opened = true;
+      scene.remove(l.mesh);
+      const roll = Math.random();
+      if (roll < 0.2) {
+        player.medkits++;
+        addFeed('Loot: +1 Medkit');
+      } else if (roll < 0.45) {
+        player.armor = Math.min(100, player.armor + (l.elite ? 45 : 25));
+        addFeed(`Loot: +${l.elite ? 45 : 25} armor`);
+      } else if (roll < 0.72) {
+        player.hp = Math.min(100, player.hp + (l.elite ? 40 : 20));
+        addFeed(`Loot: +${l.elite ? 40 : 20} hp`);
+      } else {
+        player.reserve.rifle += l.elite ? 80 : 35;
+        player.reserve.smg += l.elite ? 120 : 50;
+        player.reserve.sniper += l.elite ? 14 : 5;
+        player.coins += l.elite ? 12 : 4;
+        addFeed('Loot: ammo + coin');
+      }
       return;
     }
   }
 }
 
-function shoot(from, tx, ty, weaponKey, isPlayer) {
-  const gun = weapons[weaponKey];
-  const dx = tx - from.x;
-  const dy = ty - from.y;
-  const len = Math.hypot(dx, dy) || 1;
-  bullets.push({
-    x: from.x,
-    y: from.y,
-    vx: (dx / len) * gun.bulletSpeed,
-    vy: (dy / len) * gun.bulletSpeed,
-    life: 80,
-    damage: gun.damage,
-    color: gun.color,
-    fromPlayer: isPlayer
-  });
-}
-
-function applyDamage(target, amount) {
-  let dmg = amount;
-  if (target.armor > 0) {
-    const absorbed = Math.min(target.armor, dmg * 0.55);
-    target.armor -= absorbed;
-    dmg -= absorbed;
-  }
-  target.health -= dmg;
-}
-
-function updatePlayer() {
-  let dx = 0;
-  let dy = 0;
-  if (keys['w']) dy -= 1;
-  if (keys['s']) dy += 1;
-  if (keys['a']) dx -= 1;
-  if (keys['d']) dx += 1;
-  const len = Math.hypot(dx, dy) || 1;
-  player.x += (dx / len) * player.speed;
-  player.y += (dy / len) * player.speed;
-  player.x = clamp(player.x, 16, world.width - 16);
-  player.y = clamp(player.y, 16, world.height - 16);
-
-  const gun = weapons[player.weaponKey];
-  if (mouse.down && performance.now() - player.lastShot >= gun.fireDelay && player.ammo[player.weaponKey] > 0 && performance.now() > player.reloadUntil) {
-    player.lastShot = performance.now();
-    player.ammo[player.weaponKey]--;
-    shoot(player, mouse.x + world.cameraX, mouse.y + world.cameraY, player.weaponKey, true);
-  }
-
-  const zoneDist = Math.hypot(player.x - world.safeZone.x, player.y - world.safeZone.y);
-  if (zoneDist > world.safeZone.radius) player.health -= 0.08;
-}
-
-function updateBots() {
-  for (const bot of bots) {
-    if (!bot.alive) continue;
-
-    const zoneDist = Math.hypot(bot.x - world.safeZone.x, bot.y - world.safeZone.y);
-    if (zoneDist > world.safeZone.radius) bot.health -= 0.06;
-
-    if (performance.now() > bot.nextDirAt) {
-      bot.nextDirAt = performance.now() + 700 + Math.random() * 900;
-      const angle = Math.random() * Math.PI * 2;
-      bot.dirX = Math.cos(angle);
-      bot.dirY = Math.sin(angle);
-    }
-
-    const target = dist(bot, player) < 420 ? player : null;
-    if (target) {
-      const dx = target.x - bot.x;
-      const dy = target.y - bot.y;
-      const l = Math.hypot(dx, dy) || 1;
-      bot.dirX = dx / l;
-      bot.dirY = dy / l;
-
-      const gun = weapons[bot.weapon];
-      if (performance.now() - bot.lastShot > gun.fireDelay + Math.random() * 180) {
-        bot.lastShot = performance.now();
-        shoot(bot, player.x + (Math.random() - 0.5) * 30, player.y + (Math.random() - 0.5) * 30, bot.weapon, false);
-      }
-    }
-
-    bot.x += bot.dirX * bot.speed;
-    bot.y += bot.dirY * bot.speed;
-    bot.x = clamp(bot.x, 16, world.width - 16);
-    bot.y = clamp(bot.y, 16, world.height - 16);
-
-    if (bot.health <= 0) {
-      bot.alive = false;
-      loots.push({ x: bot.x, y: bot.y, size: 26, opened: false });
-      burst(bot.x, bot.y, '#ff8478');
-    }
-  }
-}
-
-function updateBullets() {
-  for (const b of bullets) {
-    b.x += b.vx;
-    b.y += b.vy;
-    b.life--;
-
-    if (b.fromPlayer) {
-      for (const bot of bots) {
-        if (!bot.alive) continue;
-        if (Math.hypot(b.x - bot.x, b.y - bot.y) < 14) {
-          applyDamage(bot, b.damage);
-          b.life = 0;
-          if (bot.health <= 0 && bot.alive) {
-            bot.alive = false;
-            player.kills++;
-            loots.push({ x: bot.x, y: bot.y, size: 26, opened: false });
-          }
-          break;
-        }
-      }
-    } else if (Math.hypot(b.x - player.x, b.y - player.y) < 14) {
-      applyDamage(player, b.damage);
-      b.life = 0;
-    }
-  }
-
-  bullets = bullets.filter((b) => b.life > 0 && b.x >= 0 && b.x <= world.width && b.y >= 0 && b.y <= world.height);
-}
-
-function updateZone() {
-  if (performance.now() > world.nextShrinkAt && world.safeZone.radius > 140) {
+function updateZone(dt) {
+  world.time += dt;
+  world.nextShrink -= dt;
+  if (world.nextShrink <= 0 && world.zoneRadius > 200) {
     world.phase++;
-    world.nextShrinkAt = performance.now() + 16000;
-    world.safeZone.radius -= 90;
-    world.safeZone.x = clamp(world.safeZone.x + (Math.random() - 0.5) * 260, 250, world.width - 250);
-    world.safeZone.y = clamp(world.safeZone.y + (Math.random() - 0.5) * 200, 220, world.height - 220);
+    world.nextShrink = 24;
+    world.zoneRadius -= 190;
+    world.zoneCenter.x += (Math.random() - 0.5) * 350;
+    world.zoneCenter.z += (Math.random() - 0.5) * 350;
+    world.zoneCenter.x = Math.max(-1300, Math.min(1300, world.zoneCenter.x));
+    world.zoneCenter.z = Math.max(-1300, Math.min(1300, world.zoneCenter.z));
+    addFeed(`Zone daraldı! Faz ${world.phase}`);
   }
 }
 
-function burst(x, y, color) {
-  for (let i = 0; i < 14; i++) {
-    particles.push({ x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 30 + Math.random() * 20, color });
+function drawZoneRing() {
+  if (scene.getObjectByName('zoneRing')) scene.remove(scene.getObjectByName('zoneRing'));
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(world.zoneRadius - 5, world.zoneRadius + 5, 120),
+    new THREE.MeshBasicMaterial({ color: 0x66b9ff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  );
+  ring.name = 'zoneRing';
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(world.zoneCenter.x, 0.3, world.zoneCenter.z);
+  scene.add(ring);
+}
+
+function addFeed(text) {
+  feedItems.unshift({ text, t: 5 });
+  if (feedItems.length > 6) feedItems.pop();
+  renderFeed();
+}
+
+function renderFeed() {
+  killfeed.innerHTML = '';
+  for (const item of feedItems) {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.textContent = item.text;
+    killfeed.appendChild(div);
   }
 }
 
-function updateParticles() {
-  for (const p of particles) {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life--;
-    p.vx *= 0.97;
-    p.vy *= 0.97;
-  }
-  particles = particles.filter((p) => p.life > 0);
-}
-
-function updateCamera() {
-  world.cameraX = clamp(player.x - canvas.width / 2, 0, world.width - canvas.width);
-  world.cameraY = clamp(player.y - canvas.height / 2, 0, world.height - canvas.height);
-}
-
-function drawWorld() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let x = 0; x < world.width; x += 60) {
-    for (let y = 0; y < world.height; y += 60) {
-      const sx = x - world.cameraX;
-      const sy = y - world.cameraY;
-      if (sx < -60 || sy < -60 || sx > canvas.width || sy > canvas.height) continue;
-      ctx.fillStyle = (x / 60 + y / 60) % 2 === 0 ? '#5b8742' : '#57803f';
-      ctx.fillRect(sx, sy, 60, 60);
-    }
-  }
-
-  ctx.strokeStyle = '#6fb8ff';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(world.safeZone.x - world.cameraX, world.safeZone.y - world.cameraY, world.safeZone.radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(39, 76, 140, 0.22)';
-  ctx.beginPath();
-  ctx.rect(0, 0, canvas.width, canvas.height);
-  ctx.arc(world.safeZone.x - world.cameraX, world.safeZone.y - world.cameraY, world.safeZone.radius, 0, Math.PI * 2, true);
-  ctx.fill('evenodd');
-
-  for (const box of loots) {
-    if (box.opened) continue;
-    const x = box.x - world.cameraX;
-    const y = box.y - world.cameraY;
-    ctx.fillStyle = '#74481f';
-    ctx.fillRect(x - box.size / 2, y - box.size / 2, box.size, box.size);
-    ctx.fillStyle = '#d8a56f';
-    ctx.fillRect(x - box.size / 2 + 4, y - box.size / 2 + 4, box.size - 8, 6);
-  }
-
-  for (const bot of bots) {
-    if (!bot.alive) continue;
-    const x = bot.x - world.cameraX;
-    const y = bot.y - world.cameraY;
-    ctx.fillStyle = '#d94848';
-    ctx.fillRect(x - 10, y - 10, 20, 20);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(x - 3, y - 12, 6, 4);
-  }
-
-  const px = player.x - world.cameraX;
-  const py = player.y - world.cameraY;
-  ctx.fillStyle = '#56d1ff';
-  ctx.fillRect(px - 11, py - 11, 22, 22);
-  ctx.fillStyle = '#123f60';
-  ctx.fillRect(px - 3, py - 13, 6, 4);
-
-  for (const b of bullets) {
-    ctx.fillStyle = b.color;
-    ctx.fillRect(b.x - world.cameraX - 2, b.y - world.cameraY - 2, 4, 4);
-  }
-
-  for (const p of particles) {
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - world.cameraX, p.y - world.cameraY, 3, 3);
-  }
-}
-
-function updateHud() {
-  hud.health.textContent = Math.max(0, Math.round(player.health));
-  hud.armor.textContent = Math.max(0, Math.round(player.armor));
-  hud.weapon.textContent = weapons[player.weaponKey].name;
-  hud.ammo.textContent = `${player.ammo[player.weaponKey]} / ${player.reserve[player.weaponKey]}`;
-  hud.alive.textContent = bots.filter((b) => b.alive).length + 1;
-  hud.kills.textContent = player.kills;
-  hud.zone.textContent = world.phase;
+function updateFeed(dt) {
+  for (const f of feedItems) f.t -= dt;
+  feedItems = feedItems.filter((f) => f.t > 0);
+  renderFeed();
 }
 
 function endGame(win) {
   gameOver = true;
   overlay.classList.remove('hidden');
-  overlayTitle.textContent = win ? 'Winner Winner Pixel Dinner!' : 'Elendin';
+  overlayTitle.textContent = win ? 'WINNER WINNER PIXEL DINNER' : 'ELENDİN';
   overlayText.textContent = win
-    ? `Tebrikler! ${player.kills} rakibi eledin.`
-    : `Skorun: ${player.kills}. Tekrar dene ve son hayatta kalan ol.`;
+    ? `Çok iyi! ${player.kills} kill, ${player.coins} coin topladın.`
+    : `Skor: ${player.kills} kill, ${player.coins} coin. Medkit sayın: ${player.medkits}`;
 }
 
-function tick() {
+function updateHud() {
+  hud.health.textContent = Math.max(0, Math.round(player.hp));
+  hud.armor.textContent = Math.max(0, Math.round(player.armor));
+  hud.weapon.textContent = weapons[player.weapon].name;
+  hud.ammo.textContent = `${player.ammo[player.weapon]} / ${player.reserve[player.weapon]}`;
+  hud.alive.textContent = bots.filter((b) => b.alive).length + 1;
+  hud.kills.textContent = player.kills;
+  hud.zone.textContent = world.phase;
+  hud.stamina.textContent = Math.round(player.stamina);
+  hud.coins.textContent = player.coins;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.035, clock.getDelta());
+
   if (!gameOver) {
-    updatePlayer();
-    updateBots();
-    updateBullets();
-    updateParticles();
-    updateZone();
-    updateCamera();
-    drawWorld();
+    fire(dt);
+    updatePlayer(dt);
+    updateBots(dt);
+    updateBullets(dt);
+    updateZone(dt);
+    updateFeed(dt);
+    drawZoneRing();
     updateHud();
 
-    if (player.health <= 0) endGame(false);
+    if (player.hp <= 0) endGame(false);
     if (bots.filter((b) => b.alive).length === 0) endGame(true);
   }
-  requestAnimationFrame(tick);
+
+  renderer.render(scene, camera);
 }
 
-resetGame();
-requestAnimationFrame(tick);
+init();
