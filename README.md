@@ -33,9 +33,11 @@ http://localhost:8000
 
 ### 3) Kullanım
 
-1. Model adını girin (varsayılan: `gemini-1.5-flash`).
+1. Model adını girin (varsayılan: `gemini-2.0-flash`).
 2. Mesajınızı yazıp **Gönder** butonuna basın.
 
 ## Güvenlik Notu
 
 API key’i front-end koduna yazmak güvenlik riski taşır. Üretimde backend proxy kullanılması önerilir.
+
+Eğer `API_KEY_INVALID` hatası görüyorsanız, key kısıtlamalarında localhost/127.0.0.1 izinlerini ve Google AI Studio projesinde API durumunu kontrol edin.

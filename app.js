@@ -21,14 +21,29 @@ function addMessage(text, role = 'bot') {
   return bubble;
 }
 
+function sanitizeApiKey(rawApiKey) {
+  return rawApiKey.replace(/\s+/g, '').trim();
+}
+
+function formatApiError(status, errorBody) {
+  if (errorBody.includes('API_KEY_INVALID')) {
+    return `API hatası (${status}): API key geçersiz görünüyor.\n\nKontrol listesi:\n- Key doğru projeden üretildi mi?\n- Google AI Studio API key aktif mi?\n- Key kısıtlamasında (Application restrictions) localhost/127.0.0.1 izinli mi?\n- Generative Language API etkin mi?`;
+  }
+
+  return `API hatası (${status}): ${errorBody}`;
+}
+
 async function sendToGemini(apiKey, model, prompt) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model,
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  )}:generateContent`;
 
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     }),
@@ -36,7 +51,7 @@ async function sendToGemini(apiKey, model, prompt) {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`API hatası (${response.status}): ${errorBody}`);
+    throw new Error(formatApiError(response.status, errorBody));
   }
 
   const data = await response.json();
@@ -49,8 +64,8 @@ async function sendToGemini(apiKey, model, prompt) {
 chatForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const apiKey = GEMINI_API_KEY.trim();
-  const model = modelInput.value.trim() || 'gemini-1.5-flash';
+  const apiKey = sanitizeApiKey(GEMINI_API_KEY);
+  const model = modelInput.value.trim() || 'gemini-2.0-flash';
   const prompt = promptInput.value.trim();
 
   if (!apiKey || apiKey === 'BURAYA_GEMINI_API_KEY_YAZ') {
