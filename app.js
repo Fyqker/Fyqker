@@ -5,7 +5,7 @@ const sendBtn = document.getElementById('sendBtn');
 const chatMessages = document.getElementById('chatMessages');
 
 // TODO: Kendi Gemini API key'inizi buraya yazın.
-const GEMINI_API_KEY = 'BURAYA_GEMINI_API_KEY_YAZ';
+const GEMINI_API_KEY = 'AIzaSyBcMUxyFgpJqOxqAPfvPl_Ta39vr-hgSv8';
 
 function addMessage(text, role = 'bot') {
   const wrapper = document.createElement('div');
