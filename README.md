@@ -1,29 +1,25 @@
 # HasanGPT (Web) 🤖
 
-Bu proje, **Python olmadan** sadece **HTML + CSS + JavaScript** ile hazırlanmış, Gemini API kullanan şık bir web chatbot arayüzüdür.
+Bu proje, **HTML + CSS + JavaScript** ile hazırlanmış, Gemini API kullanan şık bir web chatbot arayüzüdür.
 
 ## Özellikler
 
 - Modern ve responsive tasarım
 - Gemini modelini arayüzden seçebilme
-- API key göster/gizle butonu
 - Sohbet balonları ve hata mesajları
+- API key sabit koddan kullanma (input yok)
 
 ## Kurulum ve Çalıştırma
 
-Bu proje statik dosyalardan oluşur.
+### 1) API key'i koda yaz
 
-### 1) Dosyaları indir
+`app.js` içindeki aşağıdaki satırı kendi key’inle değiştir:
 
-Repo içindeki şu dosyalar yeterlidir:
+```js
+const GEMINI_API_KEY = 'BURAYA_GEMINI_API_KEY_YAZ';
+```
 
-- `index.html`
-- `styles.css`
-- `app.js`
-
-### 2) Tarayıcıda aç
-
-Doğrudan `index.html` açılabilir; ancak en sağlıklı yöntem bir local server ile çalıştırmaktır:
+### 2) Local server ile aç
 
 ```bash
 python -m http.server 8000
@@ -37,10 +33,9 @@ http://localhost:8000
 
 ### 3) Kullanım
 
-1. Gemini API key alanına anahtarınızı yazın.
-2. Model adını girin (varsayılan: `gemini-1.5-flash`).
-3. Mesajınızı yazıp **Gönder** butonuna basın.
+1. Model adını girin (varsayılan: `gemini-1.5-flash`).
+2. Mesajınızı yazıp **Gönder** butonuna basın.
 
-## Not
+## Güvenlik Notu
 
-API key tarayıcıdan Google endpoint’ine gönderilir. Üretim senaryolarında güvenlik için bir backend proxy kullanılması önerilir.
+API key’i front-end koduna yazmak güvenlik riski taşır. Üretimde backend proxy kullanılması önerilir.

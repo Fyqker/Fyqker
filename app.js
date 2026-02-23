@@ -1,10 +1,11 @@
 const chatForm = document.getElementById('chatForm');
 const promptInput = document.getElementById('prompt');
 const modelInput = document.getElementById('model');
-const apiKeyInput = document.getElementById('apiKey');
 const sendBtn = document.getElementById('sendBtn');
 const chatMessages = document.getElementById('chatMessages');
-const toggleKeyBtn = document.getElementById('toggleKey');
+
+// TODO: Kendi Gemini API key'inizi buraya yazın.
+const GEMINI_API_KEY = 'BURAYA_GEMINI_API_KEY_YAZ';
 
 function addMessage(text, role = 'bot') {
   const wrapper = document.createElement('div');
@@ -48,12 +49,12 @@ async function sendToGemini(apiKey, model, prompt) {
 chatForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const apiKey = apiKeyInput.value.trim();
+  const apiKey = GEMINI_API_KEY.trim();
   const model = modelInput.value.trim() || 'gemini-1.5-flash';
   const prompt = promptInput.value.trim();
 
-  if (!apiKey) {
-    addMessage('Lütfen önce Gemini API key gir.', 'error');
+  if (!apiKey || apiKey === 'BURAYA_GEMINI_API_KEY_YAZ') {
+    addMessage('Lütfen app.js içinde GEMINI_API_KEY değerini ayarla.', 'error');
     return;
   }
 
@@ -80,10 +81,4 @@ chatForm.addEventListener('submit', async (event) => {
     sendBtn.textContent = 'Gönder';
     promptInput.focus();
   }
-});
-
-toggleKeyBtn.addEventListener('click', () => {
-  const isPassword = apiKeyInput.type === 'password';
-  apiKeyInput.type = isPassword ? 'text' : 'password';
-  toggleKeyBtn.textContent = isPassword ? 'Gizle' : 'Göster';
 });
