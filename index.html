@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orby — Türkiye'nin Yeni Sosyal Medyası</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="logo">Orby</div>
+        <nav>
+          <button class="nav-item active">Ana Sayfa</button>
+          <button class="nav-item">Ara</button>
+          <button class="nav-item">Keşfet</button>
+          <button class="nav-item">Reels</button>
+          <button class="nav-item">Mesajlar</button>
+          <button class="nav-item">Bildirimler</button>
+          <button class="nav-item">Oluştur</button>
+          <button class="nav-item">Profil</button>
+        </nav>
+      </aside>
+
+      <main class="feed">
+        <section class="stories" id="stories"></section>
+        <section class="post-card">
+          <div class="post-header">
+            <div class="avatar"></div>
+            <div>
+              <p class="username">orbyofficial</p>
+              <p class="location">İstanbul</p>
+            </div>
+          </div>
+          <div class="post-image"></div>
+          <div class="post-actions">
+            <span>♡</span><span>💬</span><span>↗</span>
+          </div>
+          <p class="likes"><strong>2.148 kişi beğendi</strong></p>
+          <p class="caption"><strong>orbyofficial</strong> Orby'e hoş geldin Türkiye 🇹🇷</p>
+        </section>
+      </main>
+
+      <aside class="right-panel">
+        <section class="account-card">
+          <div class="avatar"></div>
+          <div>
+            <p class="username">seninhesabin</p>
+            <p class="muted">Senin için öneriler</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+      import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+      import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDG3r1eKELpbaHrHBtYNy7nsFEC7bKiAe4",
+        authDomain: "orby00.firebaseapp.com",
+        projectId: "orby00",
+        storageBucket: "orby00.firebasestorage.app",
+        messagingSenderId: "666578466154",
+        appId: "1:666578466154:web:c09d020172802a163d2113",
+        measurementId: "G-HMTKMKB3XS"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      // const analytics = getAnalytics(app); // Optional for MVP
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+      const storage = getStorage(app);
+
+      window.orbyFirebase = { app, db, auth, storage, getAnalytics };
+    </script>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
